@@ -186,11 +186,10 @@ function ProviderCard({
 
   return (
     <div
-      className={`rounded-md border p-3 flex flex-col gap-2 transition-colors cursor-pointer ${
-        isActive
+      className={`rounded-md border p-3 flex flex-col gap-2 transition-colors cursor-pointer ${isActive
           ? 'border-primary bg-primary/5'
           : 'border-border bg-card hover:border-muted-foreground/30'
-      }`}
+        }`}
       onClick={onSelect}
       role="button"
       tabIndex={0}
@@ -199,9 +198,8 @@ function ProviderCard({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span
-            className={`inline-block h-2 w-2 rounded-full ${
-              isActive ? 'bg-emerald-500' : 'bg-muted-foreground/40'
-            }`}
+            className={`inline-block h-2 w-2 rounded-full ${isActive ? 'bg-emerald-500' : 'bg-muted-foreground/40'
+              }`}
           />
           <span className="text-xs font-semibold text-foreground">{label}</span>
         </div>
@@ -237,11 +235,10 @@ function ProviderCard({
 
       {pingResult && (
         <div
-          className={`rounded border px-2 py-1.5 text-[10px] font-mono leading-relaxed ${
-            pingResult.status === 'ok'
+          className={`rounded border px-2 py-1.5 text-[10px] font-mono leading-relaxed ${pingResult.status === 'ok'
               ? 'border-emerald-500/30 bg-emerald-500/5 text-emerald-400'
               : 'border-destructive/30 bg-destructive/5 text-destructive'
-          }`}
+            }`}
         >
           {pingResult.status === 'ok' ? (
             <>
@@ -361,7 +358,7 @@ export function CrawlControlPanel() {
   }, [draftPrompt, draftKeywords, draftExclusions, updateSettings])
 
   return (
-    <div className="rounded-lg border border-border bg-card overflow-hidden">
+    <div className="rounded-lg border border-border bg-card ">
       {/* Progress bar when running */}
       {isRunning && (
         <div className="h-0.5 w-full bg-muted overflow-hidden">
@@ -379,13 +376,12 @@ export function CrawlControlPanel() {
           <div className="ml-auto flex items-center gap-2">
             <ElapsedTimer startedAt={stats?.startedAt ?? null} />
             <span
-              className={`inline-block h-2 w-2 rounded-full ${
-                isRunning
+              className={`inline-block h-2 w-2 rounded-full ${isRunning
                   ? 'bg-emerald-500 animate-pulse'
                   : isPaused
                     ? 'bg-amber-500'
                     : 'bg-muted-foreground'
-              }`}
+                }`}
             />
             <span className="text-xs font-mono text-muted-foreground uppercase">
               {stats?.status || 'idle'}
@@ -510,9 +506,8 @@ export function CrawlControlPanel() {
               </span>
             </div>
             <ChevronDown
-              className={`h-4 w-4 text-muted-foreground transition-transform ${
-                aiConfigOpen ? 'rotate-180' : ''
-              }`}
+              className={`h-4 w-4 text-muted-foreground transition-transform ${aiConfigOpen ? 'rotate-180' : ''
+                }`}
             />
           </CollapsibleTrigger>
 
@@ -658,9 +653,8 @@ export function CrawlControlPanel() {
               </span>
             </div>
             <ChevronDown
-              className={`h-4 w-4 text-muted-foreground transition-transform ${
-                diagnosticsOpen ? 'rotate-180' : ''
-              }`}
+              className={`h-4 w-4 text-muted-foreground transition-transform ${diagnosticsOpen ? 'rotate-180' : ''
+                }`}
             />
           </CollapsibleTrigger>
 
