@@ -28,7 +28,7 @@ const stages = [
   {
     icon: Brain,
     label: 'AI Analysis',
-    description: 'Groq LLM classifies page, extracts jobs, evaluates links',
+    description: 'Gemini 2.5 with multi-key fallback classifies and extracts',
     detail: 'ai',
   },
   {

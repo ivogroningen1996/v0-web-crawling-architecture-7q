@@ -19,7 +19,7 @@ const STORAGE_KEY = 'jobcrawler-settings'
 const defaultSettings: PersistentSettings = {
   location: 'Amsterdam',
   radiusKm: 50,
-  aiProvider: 'groq',
+  aiProvider: 'gemini-3-flash',
   customSystemPrompt: '',
   additionalKeywords: [],
   exclusionTerms: [],
@@ -27,12 +27,18 @@ const defaultSettings: PersistentSettings = {
   languagePreference: 'Any',
 }
 
+const VALID_PROVIDERS = new Set(['gemini-3-pro', 'gemini-3-flash', 'grok'])
+
 function loadSettings(): PersistentSettings {
   if (typeof window === 'undefined') return defaultSettings
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (!raw) return defaultSettings
     const parsed = JSON.parse(raw)
+    // Migrate legacy 'groq' provider to 'gemini-3-flash'
+    if (parsed.aiProvider && !VALID_PROVIDERS.has(parsed.aiProvider)) {
+      parsed.aiProvider = defaultSettings.aiProvider
+    }
     return { ...defaultSettings, ...parsed }
   } catch {
     return defaultSettings

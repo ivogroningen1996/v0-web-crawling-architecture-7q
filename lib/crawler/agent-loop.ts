@@ -6,12 +6,11 @@
 // ============================================================
 
 import { generateText, Output } from 'ai'
-import { createGroq } from '@ai-sdk/groq'
 import { createXai } from '@ai-sdk/xai'
 import { z } from 'zod'
 import { getCrawlStore } from './store'
+import { getGeminiKeyManager } from './gemini-provider'
 
-const groq = createGroq({ apiKey: process.env.GROQ_API_KEY })
 const xai = createXai({ apiKey: process.env.XAI_API_KEY })
 import { parseHTML } from './extractor'
 import { scoreKeywordRelevance, scoreLinkRelevance } from './keyword-filter'
@@ -134,21 +133,46 @@ INSTRUCTIONS:
 - Return empty arrays if no relevant content found${customPromptSuffix}`
 
   try {
-    const model = store.config.aiProvider === 'grok'
-      ? xai('grok-3-mini-fast')
-      : groq('llama-3.3-70b-versatile')
+    const provider = store.config.aiProvider
 
-    const { output } = await generateText({
-      model,
-      output: Output.object({ schema: jobExtractionSchema }),
+    if (provider === 'grok') {
+      // Use xAI Grok directly
+      const model = xai('grok-3-mini-fast')
+      const { output } = await generateText({
+        model,
+        output: Output.object({ schema: jobExtractionSchema }),
+        prompt,
+        maxOutputTokens: 4000,
+        temperature: 0.1,
+      })
+      return output
+    }
+
+    // Gemini providers -- use multi-key fallback
+    const geminiManager = getGeminiKeyManager()
+    const modelId = provider === 'gemini-3-pro'
+      ? 'gemini-2.5-pro-preview-05-06' as const
+      : 'gemini-2.5-flash-preview-04-17' as const
+
+    const { result, keyIndex } = await geminiManager.generateWithFallback({
+      modelId,
       prompt,
+      output: Output.object({ schema: jobExtractionSchema }),
       maxOutputTokens: 4000,
       temperature: 0.1,
     })
 
-    return output
+    store.log('info', `AI analysis completed using Gemini Key ${keyIndex + 1}`, pageUrl)
+    return (result as { output: z.infer<typeof jobExtractionSchema> }).output
   } catch (error) {
-    store.log('error', `AI analysis failed (${store.config.aiProvider}): ${error instanceof Error ? error.message : 'Unknown error'}`, pageUrl)
+    const message = error instanceof Error ? error.message : 'Unknown error'
+
+    // Log specific error category for better UX
+    if (message.includes('All Gemini keys exhausted')) {
+      store.log('warning', `All Gemini keys exhausted -- skipping AI analysis for this page. Structured data and keyword filters still active.`, pageUrl)
+    } else {
+      store.log('error', `AI analysis failed (${store.config.aiProvider}): ${message}`, pageUrl)
+    }
     return null
   }
 }

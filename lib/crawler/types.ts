@@ -50,7 +50,7 @@ export interface CrawlStats {
   pagesPerMinute: number
 }
 
-export type AiProvider = 'groq' | 'grok'
+export type AiProvider = 'gemini-3-pro' | 'gemini-3-flash' | 'grok'
 
 export interface CrawlConfig {
   location: string
