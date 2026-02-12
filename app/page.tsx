@@ -55,6 +55,18 @@ export default function HomePage() {
             <span className="text-[11px] font-mono text-muted-foreground uppercase">
               {data?.stats?.status || 'idle'}
             </span>
+            {data?.config?.aiProvider && (
+              <>
+                <span className="text-muted-foreground/30">{'|'}</span>
+                <span className="text-[11px] font-mono text-muted-foreground">
+                  {data.config.aiProvider === 'gemini-3-pro'
+                    ? 'Gemini Pro'
+                    : data.config.aiProvider === 'gemini-3-flash'
+                      ? 'Gemini Flash'
+                      : 'Grok'}
+                </span>
+              </>
+            )}
             {data?.config?.location && (
               <>
                 <span className="text-muted-foreground/30">{'|'}</span>
@@ -170,14 +182,15 @@ function ArchitectureView() {
           ]}
         />
         <ArchBlock
-          title="3. AI Analysis Engine (Groq)"
+          title="3. AI Analysis Engine (Gemini)"
           items={[
-            'LLama 3.3 70B via Groq for fast inference',
+            'Gemini 2.5 Pro/Flash via Google AI with multi-key fallback',
+            'Multi-key rotation: GEMINI_KEY, KEY_TWO, KEY_THREE',
+            'Automatic failover on rate limits (429) with 60s cooldown',
             'Page classification: job listing, career page, or irrelevant',
             'Structured job extraction: title, company, skills, salary',
             'Link evaluation: relevance scoring of discovered URLs',
-            'Context-aware: knows target city and radius',
-            'Confidence scoring for each extracted job (0-1)',
+            'Grok (xAI) available as alternative provider',
           ]}
         />
         <ArchBlock

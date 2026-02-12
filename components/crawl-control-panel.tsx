@@ -63,8 +63,16 @@ function ElapsedTimer({ startedAt }: { startedAt: number | null }) {
 }
 
 // ============================================================
-// AI Provider Ping Card
+// AI Provider Ping Card (Enhanced with multi-key health)
 // ============================================================
+
+interface KeyHealthInfo {
+  index: number
+  key: string
+  status: 'healthy' | 'rate-limited' | 'error' | 'untested'
+  lastError: string | null
+  cooldownUntil: number | null
+}
 
 interface PingResult {
   status: 'ok' | 'error'
@@ -73,19 +81,72 @@ interface PingResult {
   latencyMs: number
   response: string | null
   error?: string
+  keyUsed?: number
+  keyHealth?: KeyHealthInfo[]
+}
+
+const KEY_STATUS_STYLES: Record<string, { dot: string; label: string }> = {
+  healthy: { dot: 'bg-emerald-500', label: 'Healthy' },
+  'rate-limited': { dot: 'bg-amber-500 animate-pulse', label: 'Rate Limited' },
+  error: { dot: 'bg-destructive', label: 'Error' },
+  untested: { dot: 'bg-muted-foreground/40', label: 'Untested' },
+}
+
+function KeyHealthIndicator({ health }: { health: KeyHealthInfo[] }) {
+  return (
+    <div className="flex flex-col gap-1">
+      {health.map((k) => {
+        const style = KEY_STATUS_STYLES[k.status] || KEY_STATUS_STYLES.untested
+        return (
+          <div key={k.index} className="flex items-center gap-2">
+            <span className={`inline-block h-1.5 w-1.5 rounded-full flex-shrink-0 ${style.dot}`} />
+            <span className="text-[10px] font-mono text-muted-foreground">
+              Key {k.index + 1}: {style.label}
+            </span>
+            {k.status === 'rate-limited' && k.cooldownUntil && (
+              <CooldownTimer until={k.cooldownUntil} />
+            )}
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+function CooldownTimer({ until }: { until: number }) {
+  const [remaining, setRemaining] = useState(0)
+
+  useEffect(() => {
+    const tick = () => setRemaining(Math.max(0, Math.ceil((until - Date.now()) / 1000)))
+    tick()
+    const id = setInterval(tick, 1000)
+    return () => clearInterval(id)
+  }, [until])
+
+  if (remaining <= 0) return null
+
+  return (
+    <span className="text-[9px] font-mono text-amber-500 tabular-nums">
+      {remaining}s
+    </span>
+  )
 }
 
 function ProviderCard({
   provider,
   label,
   modelName,
+  subtitle,
   isActive,
+  isGemini,
   onSelect,
 }: {
   provider: AiProvider
   label: string
   modelName: string
+  subtitle: string
   isActive: boolean
+  isGemini: boolean
   onSelect: () => void
 }) {
   const [isPinging, setIsPinging] = useState(false)
@@ -103,7 +164,8 @@ function ProviderCard({
       const data: PingResult = await res.json()
       setPingResult(data)
       if (data.status === 'ok') {
-        toast.success(`${label} responded in ${data.latencyMs}ms`)
+        const keyInfo = data.keyUsed !== undefined ? ` (Key ${data.keyUsed + 1})` : ''
+        toast.success(`${label} responded in ${data.latencyMs}ms${keyInfo}`)
       } else {
         toast.error(`${label} ping failed: ${data.error}`)
       }
@@ -150,6 +212,12 @@ function ProviderCard({
         )}
       </div>
       <p className="text-[10px] font-mono text-muted-foreground">{modelName}</p>
+      <p className="text-[9px] text-muted-foreground/70">{subtitle}</p>
+
+      {/* Key health indicators for Gemini providers */}
+      {isGemini && pingResult?.keyHealth && (
+        <KeyHealthIndicator health={pingResult.keyHealth} />
+      )}
 
       <button
         onClick={(e) => {
@@ -179,6 +247,11 @@ function ProviderCard({
             <>
               <span className="block">
                 Latency: {pingResult.latencyMs}ms
+                {pingResult.keyUsed !== undefined && (
+                  <span className="text-muted-foreground ml-1">
+                    via Key {pingResult.keyUsed + 1}
+                  </span>
+                )}
               </span>
               <span className="block text-muted-foreground mt-0.5 break-all">
                 {pingResult.response}
@@ -577,7 +650,11 @@ export function CrawlControlPanel() {
                 AI Diagnostics
               </span>
               <span className="text-[9px] font-mono text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
-                {settings.aiProvider === 'groq' ? 'LLaMA 3.3 70B' : 'Grok 3 Mini'}
+                {settings.aiProvider === 'gemini-3-pro'
+                  ? 'Gemini 2.5 Pro'
+                  : settings.aiProvider === 'gemini-3-flash'
+                    ? 'Gemini 2.5 Flash'
+                    : 'Grok 3 Mini'}
               </span>
             </div>
             <ChevronDown
@@ -588,24 +665,37 @@ export function CrawlControlPanel() {
           </CollapsibleTrigger>
 
           <CollapsibleContent className="mt-3">
-            <div className="grid grid-cols-2 gap-3">
+            <div className="flex flex-col gap-3">
               <ProviderCard
-                provider="groq"
-                label="Groq"
-                modelName="LLaMA 3.3 70B Versatile"
-                isActive={settings.aiProvider === 'groq'}
-                onSelect={() => updateSettings({ aiProvider: 'groq' })}
+                provider="gemini-3-pro"
+                label="Gemini 2.5 Pro"
+                modelName="gemini-2.5-pro-preview-05-06"
+                subtitle="Recommended for high-quality analysis"
+                isActive={settings.aiProvider === 'gemini-3-pro'}
+                isGemini={true}
+                onSelect={() => updateSettings({ aiProvider: 'gemini-3-pro' })}
+              />
+              <ProviderCard
+                provider="gemini-3-flash"
+                label="Gemini 2.5 Flash"
+                modelName="gemini-2.5-flash-preview-04-17"
+                subtitle="Default -- fast and cost-effective"
+                isActive={settings.aiProvider === 'gemini-3-flash'}
+                isGemini={true}
+                onSelect={() => updateSettings({ aiProvider: 'gemini-3-flash' })}
               />
               <ProviderCard
                 provider="grok"
                 label="Grok (xAI)"
-                modelName="Grok 3 Mini Fast"
+                modelName="grok-3-mini-fast"
+                subtitle="Fallback provider"
                 isActive={settings.aiProvider === 'grok'}
+                isGemini={false}
                 onSelect={() => updateSettings({ aiProvider: 'grok' })}
               />
             </div>
             <p className="text-[10px] text-muted-foreground mt-2 leading-relaxed">
-              Click a card to set the active provider. Use &quot;Test Connection&quot; to verify responsiveness.
+              Click a card to set the active provider. Gemini providers use multi-key fallback with automatic rotation.
             </p>
           </CollapsibleContent>
         </Collapsible>

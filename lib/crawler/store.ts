@@ -121,7 +121,7 @@ class CrawlStore {
     delayBetweenRequests: 3000,
     requestTimeout: 12000,
     userAgent: 'FrontEndJobCrawler/1.0 (Educational Research Bot)',
-    aiProvider: 'groq' as AiProvider,
+    aiProvider: 'gemini-3-flash' as AiProvider,
     customSystemPrompt: '',
     additionalKeywords: [],
     exclusionTerms: [],
